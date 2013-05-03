@@ -13,3 +13,6 @@
 # Ignore all logfiles and tempfiles.
 /log/*.log
 /tmp
+
+#I generate this file when looking at git diff in subl.
+dif.txt
