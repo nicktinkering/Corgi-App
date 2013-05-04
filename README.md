@@ -1,1 +1,2 @@
-#Test App, woo!
+# Test App, woo!
+This is another rails-learning-process app.
