@@ -1,2 +1,11 @@
-<h1>StaticPages#home</h1>
-<p>Find me in app/views/static_pages/home.html.erb</p>
+<div class="center hero-unit">
+<h1>Welcome To Corgi App.</h1>
+<h2>May I take your order?
+	This is the home page for the <%= link_to "CorgiApp", "#" %>.
+</h2>
+
+<%= link_to "Sign up now!", "#", class: "btn btn-large btn-warning" %>
+
+</div>
+
+<%= link_to image_tag("rails.png", alt: "Rails"), "http://rubyonrails.org/" %>
