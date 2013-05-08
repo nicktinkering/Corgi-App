@@ -2,31 +2,35 @@ require 'spec_helper'
 
 describe "Static Pages" do
 
+	before(:each) do
+		@base_title = "CorgiApp"
+	end
+
 	describe "Home page" do
 		it "should have the default title" do
-			visit '/static_pages/home'
-			page.should have_selector('title', :text => "CorgiApp")
+			visit home_path
+			page.should have_selector('title', :text => "#{@base_title}")
 		end
 	end
 
 	describe "Help page" do
 		it "should have Help title" do
-			visit '/static_pages/help'
-			page.should have_selector('title', :text => "CorgiApp | Help")
+			visit help_path
+			page.should have_selector('title', :text => "#{@base_title} | Help")
 		end
 	end
 
 	describe "About page" do
 		it "should have the About title" do
-			visit '/static_pages/about'
-			page.should have_selector('title', :text => "CorgiApp | About")
+			visit about_path
+			page.should have_selector('title', :text => "#{@base_title} | About")
 		end
 	end
 
 	describe "Contact page" do
 		it "should have the Contact title" do
-			visit '/static_pages/contact'
-			page.should have_selector('title', :text => "CorgiApp | Contact")
+			visit contact_path
+			page.should have_selector('title', :text => "#{@base_title} | Contact")
 		end
 	end
 end
