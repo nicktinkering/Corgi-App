@@ -7,6 +7,7 @@ group :development, :test do
 	gem 'rspec-rails', '2.11.0'
 	gem 'capybara', '1.1.2'
 	gem "sqlite3"
+	gem 'annotate', '2.5.0'
 end
 
 group :production do
