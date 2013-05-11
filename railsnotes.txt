@@ -1,0 +1,931 @@
+/*
+My personal notes as I go through the Rails Tutorial.
+Meant to be viewed in Sublime Text with Javascript (Rails) syntax highlighting... Hahaha!
+(Not perfectly formatted, but again... These are meant as my personal notes.)
+
+******************!!!!!UNFINISHEDSECTION!!!!!************************
+^ ctrl-f that for where left off, if unfinished
+*/
+
+
+
+MAKING A NEW RAILS APPLICATION:
+dont make the folder yourself-- go to parent directory, and type
+	1. To begin work on a new Rails app, run:
+		// >> rails new AppNameOfChoice
+			// EDIT: Later, we want to suppress the default testing framework rails uses in favor of Rspec, so instead, we should create new apps with
+		>>rails new AppNameOfChoice --skip-test-unit
+		and it will make and AppNameOfChoice directory for you! Next, to make it a functioning rails application, you need to...
+	2. install the gems using a program called bundler. you can look at these and make sure theyre set up to your liking by looking in the Gemfile. run:
+		>> bundle install
+		If you ever change or add gems, remember to run >>'bundle install' after changing your Gemfile!
+		a. Configuring the right gems
+			+ As noted in the Heroku section, you may wish to amend the sqlite/pg section.
+			+ IMPORTANTLY, if we want to use 'rspec' as our testing suite, with 'capybara', we need to:
+				1. add it to our gemfile as such:
+					> group :development, :test do
+						> gem 'rspec-rails', '2.11.0'
+						> gem 'capybara', '1.1.2'
+					> end
+				2. Generate the appropriate files for 'rspec' to use, with:
+					>> rails generate rspec:install
+
+
+	3. Now youre ready to run the app in your local environment! To get it turning, run:
+		>>rails server 
+		+ ...And now go to localhost//:3000!
+		+ It would be recommended to get its initial commit on Git now.
+
+	4. (Not recommended) Using Scaffolding:
+		a. To create a resource (users, posts, what have you), use
+			>>rails generate scaffold [User(nameofresource)] [name(variableofchoice)]:string [email(variableofchoice)]:string
+				+Be sure to use singular capitalized noun as the resource name.
+				+After that, you can add arbitrary attributes (variables) with their type declared alongside.
+				+Note an integer id will also exist and you do not need to declare it explicitly.
+		/*Sidenote: The previous action created new files, and new files are not automatically added into what's being watched by Git. You will need to add them with git add . !*/
+		b. Along with the files generated during this scaffolding, you get a file that will allow you to create the requisite database. So, after running the scaffold generator, run:
+			>>rake db:migrate
+		c. You could now go to your site at /users/ and create and view new users.
+
+		d. To make another resource, a micropost associated with a user, we could do:
+		/* Sidenote: You can run a terminal command accross multiple lines by typing a backslash and hitting enter, then continuing the command.*/
+			>>rails generate scaffold Micropost content:string user_id:integer
+
+	5. UNDOING CHANGES IN RAILS (EVEN IF YOU MIGRATED THE DB!):
+	Lets say we created the Users resource, committed it, then modified some of its files, but forgot to commit those changes before generating and db:migrating the microposts resource. Heres how to undo things in rails:
+		To undo the lastdatabase migration, use:
+			>>rake db:rollback
+		To undo a generated resource:
+			>>rails destroy scaffold [Microposts(nameofresource)]
+
+	6. MODELS:/* Old: from when was doing scaffolded...
+		a. Enforcing constraints on the data of the models.
+			You add a 'validation' to the model file, eg 'micropost.rb'.
+			To make sure a micropost is only X char long, add:
+				> validates [:content(:nameofattribute)], :length => { :maximum => 140 }
+
+		b. Adding associations between models.
+			To make it so each micropost belongs to a user, add to its model file:
+				> belongs_to :user
+			And be sure to add the corresponding association to the user model...
+				> has_many :microposts
+			Then, when in the rails console or writing code, you can call, for example,
+				>> x = User.find(1) (or User.first)
+				>> x.microposts
+				...To get that users microposts!
+				Similarly, you can get any of their attributes with
+				>> x.name >>x.email >>Micropost.find(1).content etc */
+		First, you must plan what your data model will be. Do not neglect this important first step!
+
+		/1/. Creating Models, and the nature of Models
+			a. The first step is to actually create a model.
+			>> rails generate model User name:string email:string
+			/ * >> rails generate model [Capitalizedsingularmodelname] [optionalvar:type, optionalvar2:stringorothertype,...,]* */
+			b. This creates three files of note:
+				> THE MODEL FILE ITSELF: app/models/[modelname].rb
+				> THE DATABASE MIGRATION FILE: db/migrate/[TIMESTAMP35345_create_modelname.rb] //More info on this in section /2/ > a. Database Migrations
+				> THE SPEC TESTS FOR THIS MODEL: spec/models/modelname_spec.rb //More on writing rspec tests for models in the Rspec section.
+
+				+ We will focus on the model file itself in this section.
+
+			c. Model file found in app/models/[modelname].rb.
+				// # created with >> rails generate model User name:string email:string
+				---------- SAMPLE FILE --------
+				class User < ActiveRecord::Base
+					attr_accessible :email, :name
+				end
+				-------------- EOF ------------
+				+ ATTR_ACCESSIBLE: By default, all model attributes are 'accessible'. What 'attr_accessible :email, :name' does is to ensure that ONLY the name and email attributes are accessible to OUTSIDE USERS, eg people using the site, preventing mass assignment vulnerability.
+
+			d. ANNOTATE GEM
+				As shown, though :email and :name are listed there, we know those arent the only data held with that model! While you could always check with the database schema file in db/schema.rb, you can also add the 'annotate' gem to your Gemfile with:
+
+				> group :development do
+					> gem 'annotate', '2.5.0'
+				> end
+				/* Then run bundle update && bundle install, of course! */
+
+				...And then, to use it, run
+					> bundle exec annotate
+				....to change the above Model file example into this: 
+
+				---------- SAMPLE FILE --------
+				// # == Schema Information
+				// #
+				// # Table name: users
+				// #
+				// #  id         :integer         not null, primary key
+				// #  name       :string(255)
+				// #  email      :string(255)
+				// #  created_at :datetime
+				// #  updated_at :datetime
+				// #
+				class User < ActiveRecord::Base
+					attr_accessible :name, :email
+				end
+				-------------- EOF ------------
+				+ You may not want all data associated with your model to be accessible with getters/setters like attr_accessible makes them, so having these notes could be handy to you....
+				+ (Note that, if you want your annotations to be up-to-date, you’ll have to run annotate again any time the data model changes.)
+
+			e. Adding Validations to the model
+				+ These go in the [modelname].rb file.
+				+ It is good practice to create these with test-driven development.. see 'USING RSPEC, AND WRITING RSPEC TESTS' for information on writing spec tests for data validations!
+					- Do those first, THEN move on to implementing them with the following...
+				0. Use the method 'validates' with arguments as such:
+					******************!!!!!UNFINISHEDSECTION!!!!!************************
+
+			f. Using the Model (Creating Instances/Objects of it)
+				0. To use the model (eg make new instances of it, eg make users or whatever), you must first run >>rake db:migrate to have Rails run the db migration file generated up there and create the User table in your database. 
+					+ learn about database migrations in section "2. a. Database Migrations".
+				1. You can fire up the Rails Console in sandbox mode so that everything you do wont effect your true database.
+					>> rails console --sandbox
+					/a/ OPTIONAL: To observe what happens in the database as you mess around, run
+						>> tail -f log/development.log
+						...in another terminal window, and watch it go... (This didnt work for me though?)
+				2. Methods... 
+					/a/. Well, these are a lot like normal classes in Ruby, with a few differences, so refer back to that section. With the User model we made earlier, we can:
+						>> User.new
+						>> x = User.new
+						>> x.name = "Dave"
+						>> x = User.new(name: "Dave", email: "bomp@ding.com") //# A hash.
+						DANGEROUSLY... we could even:
+						>> x.id = 5
+							But we sure shouldnt, obviously! Lets look at what that made...
+						>> x
+						===> #<User id: 5, name: "Dave", email: "bomp@ding.com", created_at: nil, updated_at: nil> 
+						The reason we are able to do this despite the 'id' not being in 'attr_accessible' is that ALL rails models are given getters and setters by default, even though in base Ruby classes 'attr_accessor' is what creates those... Rails essentially has 'attr_accessor' already set for every attribute of a data model, which it infers by looking at the database. 'attr_accessible' is additional to that, and disallows for mass assignment of the variables it is given, like if you run:
+						>> x = User.new(id: 5, name: "Jade", email: "science@girlpower.net")
+						... Youll find that while you wont receive an error, the 'id' attribute will not have been set-- it would be NIL! Lets look:
+						>> x
+						===> #<User id: nil, name: "Jade", email: "science@girlpower.net", created_at: nil, updated_at: nil> 
+					/b/. HOWEVER, the differences between Rails Models and Ruby classes/objects is that models are about objects IN A DATABASE.
+						1. CREATION AND DESTRUCTION:
+							Things running in code/console wont be stored in the database unless you use a method to do so.
+							Method summary:
+							a. .save
+								+ This is if you made your object with .new, etc...
+								+ Tries to save model object to database (fails if validations fail).
+								+ Returns true if successful.
+								+ If successful, the database will set the 'id', 'created_at', 'updated_at' attributes.
+							b. .destroy
+								+ Deletes the object referenced..
+							c. .create
+								+ Parallel of .new, except it combines in .save to make one handy method.
+								+ Returns the data object created, NOT a boolean.
+
+						2. FINDING AND RETRIEVING: Methods! These work by calling [Modelname].[method]
+							a. .all
+							b. .first, .last
+							c. .find(#) //Throws an exception if Obj with this ID doesnt exist. only to be used when you're confident that it does! IF you're not, use...
+							d. .find_by_id(#) //And all its brethren..
+								+ Returns nil if not found.
+							e. .find_by_[attrofchoice](value) // <3 Handy!
+								+ Also returns nil if not found.
+
+						3. UPDATING:
+							Just like the parallel with [.new ... .save ] and .create, there are two ways to go about updating an object in the database.
+							 + Find and set to variable, set attributes individually, and then .save.
+								> jade = User.find_by_name("Jade")
+								> jade.email = "jade@harleyscience.org"
+									+ Note that at this point, your local User variable jade differs from the User.find_by_name("Jade") in the database. If you want to revert to version of the object stored in the db, call .reload on the variable.
+								> jade.save
+							 + Mass assignment with a hash, using the .update_attributes method.
+							Method summary:
+							a. .reload
+								+ can be used on either a whole object or an individual attribute, as in:
+									> jade.reload //Restores this variable to the same as what its pointing to in the DB. 
+									> jade.email.reload //Restores just the email of this variable to be the same as the DB's version's email attr.
+							b. .update_attributes(attrhash)
+								+ Can only update attributes set to be accessible with attr_accessible!
+								+ Does the update and the .save in one step.
+								+ As such, returns true if successful.
+
+		/2/. The Database
+			/a/ Database Migrations
+				Documentation at: http://guides.rubyonrails.org/migrations.html
+				 1. These files are found in db/migrate/[TIMESTAMP35345_create_modelname.rb].
+					// # created by >> rails generate model User name:string email:string
+					---------- SAMPLE FILE --------
+					class CreateUsers < ActiveRecord::Migration
+						def change
+							create_table :users do |t|
+								t.string :name
+								t.string :email
+
+								t.timestamps
+							end
+						end
+					end
+					-------------- EOF ------------
+					+ create_table is a method that take the argument of a symbol with the name of the table to create.
+						- It also uses a block (|t|) which is used to create columns in the database of various types, formatted as such:
+							> t.datatype :nameofcolumn
+						- t.timestamps is used to also attach two other columns: created_at and updated_at.
+						- an ID is automatically added as a column to make each instance of that Data Model uniquely identifiable.
+					This file, when run with >>rake db:migrate, would make a database table looking like such:
+					+-------------------------+
+					+		   Users		  +
+					+------------+------------+
+					+ id         + integer    +
+					+------------+------------+
+					+ name       + string     +
+					+------------+------------+
+					+ email      + string     +
+					+------------+------------+
+					+ created_at + datetime   +
+					+------------+------------+
+					+ updated_at + datetime   +
+					+------------+------------+
+
+				 2. RAKE DB:MIGRATE and RAKE DB:ROLLBACK
+					>>rake db:migrate updates your database according to your most recent migration file.
+					>>rake db:rollback will revert your database to the state before the most recent migration.
+
+			/b/ The Database Itself 
+				+ lives in db/
+				+ The Database itself (being used in development) is the development.splite3 file you will see (if using sqlite3).
+					- You could open this with a GUI and peruse it if you wanted!
+				+ The schema is in schema.rb, a file which greatly resembles database migration files, for good reason... It is what those migrations change! It is the definitive authority on what your database/data models actually look like. 
+					---------------- SAMPLE FILE ------------------
+					// # A whole lot of comments come included... Of course, this isn't a file you edit yourself!
+					ActiveRecord::Schema.define(:version => 20130511153118) do
+
+						create_table "users", :force => true do |t|
+							t.string   "name"
+							t.string   "email"
+							t.datetime "created_at", :null => false
+							t.datetime "updated_at", :null => false
+						end
+
+					end
+					------------------- EOF ----------------------
+
+
+
+	8. Creating static pages while still using the full Rails stack.
+		- We want one 'controller' for our static pages, with an 'action' corresponding to each page.
+			>>rails generate controller StaticPages home help --no-test-framework
+
+		- To add an 'about' page from here, still handled by the Pages controller:
+		1. Add the route in routes.rb
+			> get "pages/about"
+			/* You must restart the server [...] */
+		2. Add the action in the Pages controller
+			> def about
+			> end
+		3. Add the view
+			+ create file about.html.erb in the views/pages(controller)/ folder
+
+	9. Creating things in Rails manually
+		1. Controllers
+			a. Making a Controller (without scaffolding! and without default tests):
+				>>rails generate controller [pluralcapitalnameofcontroller] [(optionalactionnames)*] --no-test-framework
+			
+			b. Adding an action to an existing controller
+				/1/. Add the action in the appropriate controller at /controllers/controllername.rb
+					> def nameofaction
+						> /*(any code you may wish to add)*/
+					> end
+				/2/. If you want a corresponding view for that action:
+					1. Add the route in routes.rb, eg:
+						> get "controller/action"
+						/* You must restart the server any time you modify the routes files for the change to take effect in your application. */
+					2. Add the view in the views/nameofcontroller/ folder, nameofaction.html.erb 
+
+	10. Layouts, and Introducing Dynamic Content into your Views
+		/THE ASSET PIPELINE/
+			a. (Starting in Rails 3.1) There are three directories for static assets, each with its own purpose:
+					> app/assets: assets specific to the present application
+					> lib/assets: assets for libraries written by your dev team
+					> vendor/assets: assets from third-party vendors
+				+ Each of these has subdirectories for the respective asset classes:
+					>[...]/images 
+					>[...]/javascripts 
+					>[...]/stylesheets
+			b. Respective manifest files tell Rails how to combine all the assets in each respective directories into a single file (per directory).
+				/* Sidenote: The reason it does this is that having a single file makes your website faster for visitors, as HTTP requests add a lot of overhead time each... One HTTP request for a single file is much quicker than multiple HTTP requests for multiple files, even if those files, in total, are the same size in KB or whatever as the one all-inclusive file ... */
+				+ For example, the default manifest file for app-specific CSS: app/assets/stylesheets/application.css
+					- The following lines are what tell Rails (via the Sprockets gem) how to combine your files:
+						> /*
+						   *= require_self
+							   *= require_tree .
+							   */
+							+ The lines are fairly self-explanatory; the only potentially "surprising" thing is that they are inside a CSS comment block... And despite the usual behavior/nature of comments in code, these are not 'ignored by the compiler' and are, as such, not optional.
+		/Layouts/
+			Main Application Layout File (application.html.erb) in Modern Rails:
+				<head>
+					<title><%= [...] %></title>
+					<%= stylesheet_link_tag    "application", media: "all" %>
+					<%= javascript_include_tag "application" %>
+					<%= csrf_meta_tags %>
+					<!--[if lt IE 9]>
+					<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+					<![endif]-->
+				</head>
+			> <%= yield %> (in the body) is where the normal page content goes.
+
+		/Using Variables in Your Views:
+			/Option 1 //Best for dynamic content
+				a. Define any variable you want in your controller.
+				It will available to the corresponding actions view.
+				+For example, to make titles dynamic. 
+					In StaticPagesController, the following modification:
+						>def help
+							>@title = "Help"
+						>end
+				b. Would allow one to use @title in the view itself, a la:
+					> <title> <%= @title %> </title> 
+					And each variable defined in each action would be specific to that view.//
+			Option 2 //Primarily useful for variables for the overall layout
+				a. Provide a variable in the view itself, rather than the controller, by adding this to it:
+					> <% provide(:varname, 'value') %>
+					and then using 
+					> <%= yield(:title) %>
+					to access and use it (generally in the application layout)!
+			Option 3 //Using a helper method
+				One could augment the above technique by adding a helper method.
+					> <%= full_title(yield(:title)) %>
+				This would use the helper method noted below for a more tidy default title.
+
+		10 a. Embedded Ruby
+			+ Obviously:
+				> <% [...] %> runs Ruby code, but does not insert whats returned
+				> <%= [...] %> runs Ruby code and inserts the return value as a string
+			a. Some methods for <%= %> tags:
+				/1/. stylesheet_link_tag "nameofcssfilewithextensionleftoff", :media => "all"
+					+ the :media hash indicates "screen", "print", etc, like "all" here... Printing (physically) or display on screen..
+					+ Second arg optional.
+				/2/. link_to "text2display", 'uriofchoice/eg/#'
+					+ optional args at end: class: "[..]"
+					+ can use image_tag("img.png", alt: "txt") in place of "text2display"
+					+ One can use a named route in place of a literal string URI for the second argument, for example:
+						> <%= link_to "Home", root_path %>
+
+		10 b. Partials
+			+ A good way to make your code tidier and follow the DRY principle. To add a partial to your current view, use the following method:
+				> <%= render "layouts/filename" %>
+			+ The above causes Rails to look for a file in app/views/layouts/ called _filename.html.erb and insert its HTML content into the current view.
+
+		10 c. Aside: CSS, and Twitter Bootstrap
+			Using Twitter Bootstrap:
+			/0/. Documentation
+				- http://twitter.github.io/bootstrap/getting-started.html
+				- http://twitter.github.io/bootstrap/scaffolding.html
+				- http://twitter.github.io/bootstrap/base-css.html
+				- http://twitter.github.io/bootstrap/components.html
+				- http://twitter.github.io/bootstrap/javascript.html
+				- http://twitter.github.io/bootstrap/customize.html
+			/1/. Adding Twitter Bootstrap to a Rails App:
+				+ Simply add gem 'bootstrap-sass', '2.1' to your Gemfile. Enjoy!
+					/* Don't forget to run >>bundle update && bundle install and restart the server! */
+				+ Your stylesheets need to be .css.SCSS for bootstrap to work its magic.
+				- You need to import bootstrap into your .scss file, too. Top of file:
+					> @import "bootstrap";
+			/2/. Adding Custom CSS to your App
+				+ create a file to contain it in app/assets/stylesheets
+					-ex. custom.css.scss 
+				+ Anything in this directory will be automatically included as part of the application.css file. This is because of the Rails ASSET PIPELINE.
+
+	11. Adding Helper Methods
+		+ Helper methods reside in app/helpers/[x]_helper.rb.
+		+ The file you write your helper function in is actually arbitrary; helpers in any helper file are available to any view. 
+		+ Helpers can access instance variables defined in the Controller Action like @title.
+			- The reason for this is because they are in 'Modules', which are self-contained groups of function(s) that can be used by various Classes--
+				in this case, Controllers automatically pass in their instance variables to the helper methods they call...
+				Normally in Ruby, you have to explicitly include a module in a class, but Rails will automatically include helper modules in the Controller classes.
+		a. Below is an example helper method that returns a better title for each view, using a default or encorporating a variable given with <% provide(:x, "") %>.
+			Since this is used across the entire app, we will put it in application_helper.rb.
+			Helper methods are just standard Ruby. Here is how they fit in:
+				FILE ----
+					module ApplicationHelper
+
+						def full_title(page_title)
+							base_title = "CorgiApp"
+							if page_title.empty?
+								base_title
+							else
+								"#{base_title} | #{page_title}"
+							end
+						end
+					end
+				EOF ----
+			We could then use this in our main application view as described in the previous section.
+
+	12. Routes
+		Further reading material at some point: http://guides.rubyonrails.org/routing.html
+		+ Routes are in config/routes.rb
+		+ You can use named routes to refer to certain URIs, like variables. For example:
+			> <%= link_to "go to foobar", foobar_path %>
+		a. Define routes with 
+			/1/. the get method, to make simple static URIs accessible via GET requests:
+				> get 'static_pages/help'
+			/2/. the match method, to make things both accessible via GET requests AND to automatically generate a named route:
+				> match '/help', to: 'static_pages#help'
+				- This creates a named route called 'help_path' for your use.
+				- The second argument works by routing the request to the 'help' action of the 'static_pages' controller.
+				- As you can see, given that youre creating a custom mapping in the first argument, this method also means a person can visit '/help' instead of 'static_pages/help', even though the true folder structure of your website is different.
+				- It also creates a named route called 'help_url'; the difference is that this will insert the full 'http://domain[..etc..]/help' URI text when it is used, whereas 'help_path' will use a relative URI.
+					+ 'x_path' is more reliable and it is convention to use it, EXCEPT when doing redirects-- these should use 'x_url', simply because the HTTP standard technically requires a full URI for redirects (though in practice browsers will work with either).
+			/3/. The root path can get special treatment. Define it like this:
+				> root to: 'yourcontroller#action'
+
+			
+
+INFORMATION ON RUBY IN GENERAL:
+
+	0. Using the console
+		a. Invoke the 'interactive ruby' console with 'irb'
+		b. To include a class file you created in your console environment, use
+			>> require './filename' //#leave off .rb; also, filepath is required but doesnt have to be ./ alone
+
+	1. Variables are:
+		a. declared just by naming them and assigning a value. No var prefix, etc.
+			> base_title = "CorgiApp"
+		b. Undefined things:
+			/1/. An instance variable, such as '@title', is 'nil' by default, unless defined.
+			/2/. Normal variables, though, if tried to access without declaration, throw an error.
+				> super_dog ==> NameError: undefined local variable or method 'super_dog' for [...]
+				> @super_dog ===> nil
+		c. Scope:
+			/1/. A variable will only be available within the block it is defined in, normally.
+				--EXAMPLE FILE-- test.rb
+				> (0..2).each do |x|
+					> dogname = "allie"
+					> puts "#{x} #{dogname}"
+				> end
+				> dogname.nil?
+
+				>> ruby test.rb
+					'0 allie'
+					'1 allie'
+					'2 allie'
+				/NameError: undefined local variable or method 'dogname' [...]/
+
+			/2/. In some contexts, you can make it into an instance variable, and it will be available outside the block then.... See Classes and Rspec.
+
+	2. Functions (also called methods):
+		/1/. Creating them:
+			a. made with the following syntax:
+				> def functionname || def functionname(args)
+					> ...
+				> end
+			b. They implicitly return the value of the last statement executed. No need to explicitly say "return" or anything, though you could.
+				ex:
+					> def myDogName
+						> "Allie"
+					> end
+				...When called, it will simply return "Allie".
+				However, you can explicitly say > return "Allie" and it would do the same thing.
+			c. You can create them with default arguments. If nothing is passed in, the arguments default to that value, as below.
+				> def bestDog(dogname = "Allie")
+					> dogname
+				> end
+				Using this function:
+				>> bestDog ==return==> "Allie"
+				>> bestDog("Holly") ==return==> "Holly"
+		/2/. Calling them:
+			a. You can call them with or without parenthesis for their arguments,
+					> stylesheet_link_tag 'mycss', :media => "all"
+						or
+					> stylesheet_link_tag('mycss', :media => "all")
+				and if their last arg is a hash, you can write it with or without curly braces.
+					> stylesheet_link_tag 'mycss', { :media => "all" }
+	3. Conditionals:
+		a. if/else syntax:
+			> if true
+				> [...]
+			> else
+				> [...]
+			> end
+		b. Combinations
+			> puts "hello" if true && false  ==> prints nothing.
+			> puts "hello" if true || false  ==> "hello"
+			> puts "hello" unless true 		 ==> prints nothing.
+			> puts "hello" unless !true 	 ==> "hello"
+		c. All objects are true except false and 'nil'
+		d. You can get a boolean version of anything by preceding it with !!
+			>> !!0 ==> true
+			>> !!"hello" ==> true (but it will throw a warning (but not error))
+	4. String class:
+		a. Concatenation with +
+			> "foo" + "bar" => "foobar"
+		b. String interpolation:
+			> "#{personX} is friends with #{personY}"
+			+ Will call .to_s on non-String objects to try to integrate them.
+			+ Can be a good idea to call '.inspect' on whatever youre interpolating if you dont want it converted into a string somehow.
+		c. Difference between single-quoted and double-quoted string, and another method:
+			+ double-quotes: allows interpolation, command-characters.
+				> "#{myDogName} foo\n" => 'Allie foo'[newline]
+			+ single-quotes: literally whatever is inside the quotes.
+				> '#{myDogName} foo\n' => "\#{myDogName} foo\\n"
+			+ Another trick! Make a string with %() to automatically escape double-quotes but still allow interpolation!!
+				> %(my "dog" is "named" #{myDogName}, if you know what I mean....) 
+					==> "my \"dog\" is \"named\" Allie, if you know what I mean...." 
+		d. Some methods:
+			- .length
+			- .empty?
+			- .split
+				+ default splits to an array via all whitespace, or can specify with .split('substrofchoice')
+				> "foo bar \n         zoop".split ==> ["foo", "bar", "zoop"]
+			- :/RAILS SPECIFIC, NOT IN BASE RUBY/
+				+ .blank? 
+					> "    ".empty? ====> false
+					> "    ".blank? ====> true
+	5. Output to console uses methods:
+		> 'puts' arg => (prints arg variable, returns nil)
+		> 'print' will not put a newline at the end.
+		> 'p' will 'puts' arg.inspect
+	6. 'nil'
+		a. nil.empty? throws an error
+		b. nil.to_s ==> ""
+		c. nil.to_s.empty? ==> true
+		d. nil.nil? ==> true
+		e. :/RAILS SPECIFIC, NOT IN BASE RUBY/
+			> nil.blank? ==> true
+	7. Array class:
+		> a = [1,3,5]
+		> a[0] ==> 1
+		> a = %w[1,2,4]
+		> a[0] ==> "1"
+		> a[-1] ==> "4"
+		a. Some methods:
+			- .length
+			- .empty?
+			- .first, .last
+			- .sort, .sort!
+			- .shuffle, .shuffle!
+			- [array] << [item to add at end]
+			- .each do |item| [...] end
+				OR
+			- .each { |item| [...] }
+			- .map { |item| [...] }
+				+ A TRICK to more conveniently return an array with some method mapped to all its values:
+					> .map(&:method)
+	8. Range class
+		> a = 1..52 ==> 1..52
+		> 1..52.to_a ==> throws an error
+		> (1..52).to_a ==> [1, 2, ... 52]
+		> (1..52).each do |x| [...] end
+			OR
+		> (1..52).each { |x| [...] }
+	9. Number class
+		- Obviously, integers.
+		a. Methods:
+			> 5.times do 
+				>[...]
+			> end
+	10. Symbol class
+		+ Lightweight string-like labels. Each is stored in memory only once.
+		a. Methods:
+			- .length
+	11. Hash class
+		+ Basically just like arrays, but indices(keys) are (any object) instead of 0...n.
+		+ Hashes are a collection of key-value pairs.
+		a. Syntax:
+			> hashvar = {"foo" => "zingus", :foo => "dingus", 17 => [4,6,2]}
+				or, if symbols are keys:
+			> hashvar = { foo: "dingus", bar: "heya"  }
+			+ adding new values:
+				> hashvar["food"] = "tacos"
+			+ Calling a key that isnt defined returns nil.
+				> hashvar[:iaintmadethis] ==return==> 'nil'
+			+ ...Unless you chose to create your hash in this way, setting a default value for undefined keys:
+				> hashvar = Hash.new("zip")
+				With the above, trying to get an undeclared key will return "zip".
+		b. Hashes have no guaranteed order.
+		c. Some methods:
+			- .each do |key, val| [...] end
+				+ ex. >puts "key #{key.inspect} had value #{val.inspect}"
+	12. Ruby Classes
+		a. while most built-in classes have implicit constructors with special syntax, the
+			general syntax for creating new instances of a class is such:
+			> s = String.new("foobar")
+			Note the capitalized class name and .new method.
+		b. To get an objects class:
+			> s.class ===> String
+		c. ..To get the class above that (the "superclass"):
+			> s.class.superclass ====> Object
+		d. Making your own class:
+			--- BEGIN SAMPLE FILE ----
+			class PalindromeTester
+				# Im just using this particular class to create objects with the palindrome method.
+				# This isnt really a good use of a class, but it demonstrates the basic creation of one.
+				def palindrome?(str)
+					str == str.reverse
+				end
+			end
+			--- EOF SAMPLE FILE ----
+			Using that:
+				> p = PalindromeTester.new()
+				> p.palindrome?("foo") ====>  false
+				> p.palindrome?("level") ====> true
+		e. Making a class with inheritance:
+			--- BEGIN SAMPLE FILE ---- Note that in Ruby, # begins a comment, but I am also adding backslashes so that the syntax is highlighted as a comment in this file
+			class Word < String
+				//# This class makes objects that are based off of Strings, but with our additional method(s).
+				def palindrome? //# We no longer need an argument, because we can reference the object with 'self'.
+					self == self.reverse //# The Word object inherits the .reverse method.
+				end
+			end
+			--- EOF SAMPLE FILE ----
+			Using that:
+				> foo = Word.new("foo") //# The Word class now inherits the String constructor method.
+				> hannah = Word.new("hannah")
+				> foo.palindrome? ====>  false
+				> hannah.palindrome? ====> true
+		f. Modifying a base Ruby Class...
+			--- BEGIN SAMPLE FILE ---- 
+			class String
+				def palindrome? 
+					self == self.reverse
+				end
+			end
+			--- EOF SAMPLE FILE ----
+			Now we could simply:
+				> "hannah".palindrome? ===> true
+			However, it is not recommended to do things like this, for claritys sake.
+		g. Making a non-trivial class of your own, with instance variables, etc.
+			--- BEGIN SAMPLE FILE ---- user.rb
+			class User
+				attr_accessor :name, :email
+
+				def initialize(attributes = {})
+					@name = attributes[:name]
+					@email = attributes[:email]
+				end
+
+				def formatted_email
+					"#{@name} <#{@email}>" //# returns eg "Nick <nick@ex.org>"
+				end
+			end
+			--- EOF SAMPLE FILE ----
+			Using it:
+				>> irb
+				>> require './user'
+				>> user = User.new(:name => "Nick", :email => "nick@ex.org")
+
+				>> user.name ==return==> "Nick"
+				>> user.formatted_email ==return==> "Nick <nick@ex.org>"
+				>> user.email = "nicksnewadd@gmail.com"
+				>> user.formatted_email ==return==> "Nick <nicksnewadd@gmail.com>"
+			Important Notes:
+			1. 'attr_accessor' is a Ruby method that automatically generates getter and setter methods for 
+				the instance variables you choose to make (their names passed in as symbol arguments).
+				/* Mind the difference between this and attr_accessible, which is a RAILS method! The latter allows data models to have their attributes mass-assigned with a hash... */
+			2. You can then set them using @varname anywhere in that instance of the object, most likely in the init method.
+			3. 'initialize' is the name of the method that will be invoked by Classname.new()
+			4. Using a nested hash to create an object instance:
+				>> params = {}
+				>> params[:user] = {:name => "Nick", :email => "nick@ex.org"}
+					==creates==> {:user => {:name => "Nick", :email => "nick@ex.org"} }
+					+ Note: One key in the hash, with that keys value being another hash. 
+				>> nick = User.new(params[:user])
+					+... Creates the same user we did manually earlier.
+
+
+GENERAL INFO ON HOW RAILS WORKS:
+	The /resourcename URI (by default with scaffolding) routes to the INDEX ACTION of the resourcename CONTROLLER.
+	The user Controller talks to the Model (user.rb) by getting User.all, and passes that to the view with @users.
+	In routes.rb,
+		> resources :users
+			is what creates a bunch of routes for that resource.
+
+	In the resourcenames_controller.rb file,
+		you will see the various Actions for that resource, as functions.
+		For example,
+			> def index 
+				> @users = User.all
+			> end
+			+ The User model class has a method all which returns an array of all User objects in the database.
+				- You can look at the User model in user.rb... Notice its empty! the .all method is inherited in the first line, that does ActiveRecord::Base.
+			+ The return array of User.all is captured in @users, an instance variable.. The significance of which is that instance variables are available to the views!
+	many Actions have a corresponding view (action).html.erb.
+
+
+
+
+USING RSPEC, AND WRITING RSPEC TESTS:
+	/* Remember: in order to get going from here, you have to added and installed the rspec and cabybera gems in your Gemfile, and have run
+	>>rails generate rspec:install
+	to install rspec, as was talked about in the setting-up-a-rails-app section!*/
+	0. Once per app: Lets remove the automatically generated tests that came with Rails, if we didnt use the no-test-framework flag when generating our controller. They suck, and were writing our own-- specifically, we intend to test the views and helpers while testing our controllers.
+		>>git rm -r spec/views/
+		>>git rm -r spec/helpers/
+	1. To run all tests in the spec folder, run:
+		>>rspec spec/
+		//Note, if we hadn't made sure RVM was 1.11.x or above, we would have to prefix commands as such:
+		//>>bundle exec rspec spec/
+		//One can check by running:
+		//	>>rvm get head && rvm reload
+		//	>>rvm -v
+
+	ACTUALLY WRITING RSPEC TESTS:
+	1. You can create the 'SPEC' file (the test to be run) for any given controller in /spec/controllers/ as 'controllername_controller_spec.rb'
+			However, rspec tests in your controllers folder wont render the views for any pages by default. To fix this, you supposedly add:
+			> render_views
+		...under the 'describe XController do' heading. (Did not work for me)
+
+		/a/. The general structure for tests on controllers is:
+			FILE ------
+				require 'spec_helper'
+
+				describe StaticPagesController do
+						describe "arbitrary string re: what the subject of this/these test/s is" do
+						it "arbitrary str what this specific test does" do
+						//THE FOLLOWING ARE EXAMPLES OF SOME THINGS THAT COULD BE IN A TEST
+							get 'action' /* get is a method to do a GET request. action is whatever action this test should try for this controller to get to the page it wants to look at*/
+							response.should be_success
+								/*response is the result of the get method.
+									should is a method called on response saying its argument should apply to what its called on.
+									be_success is a (presumably constant) variable indicating a successful GET request.*/
+						end
+					end
+				end
+			EOF -----
+
+	2. You can create an rspec request spec with:
+		>>rails generate integration_test arbitraryname
+		That test will be in spec/requests/arbitraryname_spec.rb and this approach is described in the book.
+		
+		/a/. The general format for a request spec test is:
+			FILE ------
+				require 'spec_helper'
+
+				describe "Arbitrary Topic, eg Static Pages" do
+
+					describe "Arbitrary Sub-Topic, eg Home Page"
+
+						it "abtr.str.x: 'it should have the content [contentamtestingfor]'" do
+							visit '/controllername/actionname'
+							page.should have_content('Hello!')
+						end
+					end
+				end
+			EOF -----
+
+		/b/. More rspec tests:
+			> [page.should] have_selector("htmltagname", 
+											:text => "desiredcontentstring") 
+			//Weirdness-- only seems to do partial selection, not exact match. Sigh. Works like [attr*=val].
+	3. Useful methods for your Rspec tests.
+		/a/. Reducing Repetition with the BEFORE method.
+			> before(:each) do
+				>[...]
+			> end
+				And it will run that code before each example/describe-block of code.
+				For example, to create a variable they all can use:
+				> before(:each) do 
+					>@base_title = "Ruby on Rails Sample App HTML Title"
+				> end
+
+				then in your tests:
+				[...]
+					response.should have_selector("title", :text => "#{@base_title} | Home")
+				[...]
+			A synonym is to use 
+				> before { visit root_path }
+		/b/. Reducing Repetition by setting a SUBJECT.
+			+ You could keep saying page.should, page.should_not..
+			+ ...Or, you could set the 'subject' of your tests in the beginning.
+				> subject { page }
+			+ Then, from then on, instead of page.foobar, you do:
+				> it { should have_[...] }
+		/c/. Reducing Repetition with SHARED EXAMPLES.
+			> shared_examples_for "all_FOOBAR" do
+				> it { should have_selector('h1',    text: VAR1) }
+				> it { should have_selector('title', text: helpermethodfoo(VAR2))}
+			> end
+
+			then, in any given describe "xxx" do block...
+				> let(:VAR1) { 'First variable specific to this block...' }
+				> let(:VAR2) { 'Second variable specific to this block...'}
+				> it_should_behave_like "all_FOOBAR"
+			+ Use shared_examples_for with it_should_behave_like for nicely-written, DRY tests.
+		/d/. Test links with click_link
+			> visit root_path
+			> click_link "About"
+			> page.should have_selector 'title', text: full_title('About Us')
+	4. Make helpers for Rspec tests OR include the ones you made.
+		/ /. Files in spec/support/ are automatically included by rspec.
+
+		/a/. You cant access your main Application helpers in rspec specs by default. Instead, as a possible alternative, you can make your own rspec support methods in spec/support/utilities.rb. They can be parallel copies of your real helpers or entirely new methods.
+		/* Remember... Rspec runs in plain Ruby! Note the .rb! */
+			---- SAMPLE utilities.rb FILE ------
+			def full_title(page_title)
+				base_title = "Ruby on Rails Tutorial Sample App"
+				if page_title.empty?
+					base_title
+				else
+					"#{base_title} | #{page_title}"
+				end
+			end
+			---- EOF -----
+		/b/. ...Or you can just use 'include' to bring in the module.
+			> include ApplicationHelperOrwhateveryoucalledit
+
+
+USING GIT:
+	VERSION-CONTROL CONFIGURATION.
+	1. Youll already have a gitignore file in your directory-- rails new creates it by default! Lets configure it... Well, see one of our pre-made ones for stuff to put in there-- its not standard, but its good to ignore various sorts of useless files.
+	2. To initialize git in your directory:
+		>>git init
+		>>git add .
+			-adds all files.
+		(optional: to reference what has been added:
+			>>git status )
+	3. You next commit your changes locally-- this is completely local to your machine!
+		>>git commit -m "Initial commit."
+		to commit ALL files, including notice of added or removed files, do
+			>>git commit -am "Message.."
+		(optional: to see what has been committed,
+			>>git log)
+	4. Push to Github, if you want.
+		0 a. You would need to make an account on Github now if you dont have one.
+		0 b. Once per computer system, make sure this is done! Set your email and name:
+			>>git config --global user.email (address)
+			>>git config --global user.name (your name)
+			- Note that the email address has to be the same as the one on your Github Account!
+		1. Create a repository on the Github website for this project. 
+		2. Use the second-to-last line under "Next Steps" on the resulting page to add the remote origin to your project, a la:
+			>>git remote add origin https://github.com/nicktinkering/puppy_app.git
+		3. Now youve added your remote origin! However, this doesnt actually put anything in your Github repository yet. To push your commits online, you have to...
+			>>git push origin master
+
+	5. Amending premature commits or messed-up messages
+		To 'replace' your last commit with your current staging area (for ex you had forgotten to >>'git add .' before committing, and you wanted them in the commit, OR, you simply want to change your commit message, [+-go ahead and add them] and then run):
+				>>git commit --amend [-m "..."]
+
+	6. Pushing Further Commits, Later!
+		+ Have you committed all your changes? Run:
+			>>git status
+			-You want to see: 
+				"nothing to commit (working directory clean)"
+		+ If so, go on ahead and push it up!
+			>>git push
+			All pushes after the first dont need 'origin master' on them.
+					
+	7. What about Branches?
+		0. To see what branches there are, and which one you are on:
+			>>git branch
+		1. The general way to switch to a branch is:
+			>>git checkout (name of branch)
+			a. However, to create a new branch, pass in a flag as such:
+			>>git checkout -b (name of branch)
+			/* Don't forget to push your new branch to Github with >>git push origin [branchname]*/
+		2. If you mess up and want to undo your changes on a branch, to bring your files/directory/etc back to the state they were upon the last commit, run:
+					>>git checkout --force
+					- (or git checkout -f) 
+				= alternatively, you can do:
+					>>git reset --hard HEAD
+					+ but this may do something different... his prompt said "HEAD is now at 4d05813 Initial Commit" after running that
+		3. If you had committed your fuckups, and want to delete the branch entirely:
+			+ Switch to your master branch with
+				>>git checkout master
+			+ Because there are changes on that branch that havent been merged with the master, to delete it, you have to run the following:
+				>>git branch -D (name of branch)
+		4. HOWEVER, lets say we didnt delete nothin'. We're on the branch we made changes and commits to. To merge this back into the master, 
+				a) first go back into the master:
+					>>git co master
+				b) merge that bad-boy!
+					>>git merge (name of branch to merge)
+				c) Now, if you dont want that branch anymore, you can delete it with a soft d flag, via:
+					>>git branch -d (name of branch)
+
+
+	
+	7. MAKING CHANGES TO FILES: KEEPING GIT AWARE. 
+		+ instead of the usual rm/mv/etc, prefix these commands with git!
+			EX = since we are changing the file-extension on our README file, we are doing so with:
+				>>git mv README.rdoc README.md
+
+	8. GIT STATUS 
+		>>'git status' shows you what files are on the table to be put in your next commit. To see what changes in those files differentiate them from your last commit....
+		>>git diff
+			/* Special note-- it is useful to pipe this to a file for your text editor, sublime text, for nice syntax highlighting! Try: 
+			>>git diff > dif.txt && subl dif.txt
+			The above command saved into an alias:
+			>>gitdiff
+			*/
+			
+DEPLOYMENT OF YOUR RAILS APP:
+	So long as your code is on Git, you can use Heroku.
+	To do so:
+		0. Get set up on this project:
+			a. Install Heroku gem.
+				>>gem install heroku 
+			b. (Once per machine) Add your public key.
+				>>heroku keys:add
+		1. Create a remote app at Heroku. Be in your git directory! This is automatically linked to your current Git project, but creating it does not push the code there yet.
+			>>heroku create
+				a) Optionally, if you want to rename from the nice little poetic URL they give you by default, run:
+					>>heroku rename (yournameofchoice)
+		2. To push it there,
+			  /* !Warning! For your rails app to be compatible with heroku, you must use the pg gem in your gemfile instead of sqlite3. Advised:
+				gem "sqlite3", :groups => [:development, :test]
+				gem "pg", :groups => [:production]
+				*/
+			>>git push heroku master
+		3. That just puts the code up there, though-- you need to set up a database there! To do so, run:
+			>>heroku rake db:migrate
+			/* As noted before, Heroku has PostgreSQL running for databases instead of SQLite3. Eventually, you should use PG in your local production or development environment to make sure things run the same. */
+			// (Note that this Heroku database will be blank... Youre not populating it with your local db content. (And why would you?! Ideally, we want real people with real accounts and posts...))
