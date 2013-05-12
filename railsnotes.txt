@@ -3,7 +3,7 @@ My personal notes as I go through the Rails Tutorial.
 Meant to be viewed in Sublime Text with Javascript (Rails) syntax highlighting... Hahaha!
 (Not perfectly formatted, but again... These are meant as my personal notes.)
 
-******************!!!!!UNFINISHEDSECTION!!!!!************************
+%%unfinished%%
 ^ ctrl-f that for where left off, if unfinished
 */
 
@@ -75,7 +75,9 @@ dont make the folder yourself-- go to parent directory, and type
 				...To get that users microposts!
 				Similarly, you can get any of their attributes with
 				>> x.name >>x.email >>Micropost.find(1).content etc */
-		First, you must plan what your data model will be. Do not neglect this important first step!
+			First, you must plan what your data model will be. Do not neglect this important first step!
+
+			Additionally, you should use test-driven development each step of the way... See '3. Rspec tests for Models.' under the RSPEC section for information!
 
 		/1/. Creating Models, and the nature of Models
 			a. The first step is to actually create a model.
@@ -96,8 +98,11 @@ dont make the folder yourself-- go to parent directory, and type
 				end
 				-------------- EOF ------------
 				+ ATTR_ACCESSIBLE: By default, all model attributes are 'accessible'. What 'attr_accessible :email, :name' does is to ensure that ONLY the name and email attributes are accessible to OUTSIDE USERS, eg people using the site, preventing mass assignment vulnerability.
+				Other possible methods:
+				+ VALIDATES: see 'f. Adding Validations to the model'
+				+ BEFORE_SAVE: a 'callback' method. see '/c/. Standardized Capitalization of String Attributes before saving'
 
-			d. ANNOTATE GEM
+			d. AN ASIDE: the annotate gem
 				As shown, though :email and :name are listed there, we know those arent the only data held with that model! While you could always check with the database schema file in db/schema.rb, you can also add the 'annotate' gem to your Gemfile with:
 
 				> group :development do
@@ -127,14 +132,73 @@ dont make the folder yourself-- go to parent directory, and type
 				+ You may not want all data associated with your model to be accessible with getters/setters like attr_accessible makes them, so having these notes could be handy to you....
 				+ (Note that, if you want your annotations to be up-to-date, you’ll have to run annotate again any time the data model changes.)
 
-			e. Adding Validations to the model
-				+ These go in the [modelname].rb file.
-				+ It is good practice to create these with test-driven development.. see 'USING RSPEC, AND WRITING RSPEC TESTS' for information on writing spec tests for data validations!
-					- Do those first, THEN move on to implementing them with the following...
-				0. Use the method 'validates' with arguments as such:
-					******************!!!!!UNFINISHEDSECTION!!!!!************************
+			e. Adding new attribute/structure to a model
+				+ To add a new attribute to a model, you must generate a database migration as such:
+					>> rails generate migration [name of migration, ex: add_index_to_users_email]
+				+ Read more at '3. Writing your own database migrations' in the database migrations section. 
 
-			f. Using the Model (Creating Instances/Objects of it)
+			f. Adding Validations to the model
+				+ These go in the [modelname].rb file.
+				+ If youre in the rails console, use >reload! to reload the models/database schema at any point if you changed them.
+				+ Dont forget to use test-driven development! Make your tests (refer to '3. Rspec tests for Models.'), and THEN move on to implementing your validations with the following...
+				0. Use the method 'validates' with various arguments as such:
+					> validates :attrname, [arg1, arg2, arg3....]
+					a. presence: true
+						+ To ensure that this attribute is present; e.g. not blank.
+					b. length: { [maximum: X, minimum: Y, ...] }
+					c. format: { with: /regex/ }
+					d. uniqueness: true //Does not guarantee case-insensitivity!
+					   uniqueness: { case_sensitive: false }
+						/* BIG CAVEAT: The 'uniqueness' validator does not actually guarantee uniqueness, due to the following situation: if two requests are sent in rapid succession, such as if someone clicks a webform submission button twice, it is possible that two objects would be simultaneously created in memory and considered valid by the code, then stored in the database-- A big problem! One needs to implement a check for uniqueness on a deeper level, among other things... See Section 2: UNIQUENESS.  */
+
+					EXAMPLE:
+					------ SAMPLE FILE -----
+					class User < ActiveRecord::Base
+					attr_accessible :email, :name
+
+					validates :name, presence: true,
+				  					 length: { maximum: 50 }
+					VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
+					validates :email, presence: true,
+									  format: { with: VALID_EMAIL_REGEX },
+									  uniqueness: { case_sensitive: false }
+					end
+					---- EOF SAMPLE FILE ----
+
+				1. When validations fail, and 'errors' object is generated. You can get the reason for failure by calling .errors.full_messages on the model object that failed validation.
+					> x = User.new
+					> x.valid?
+					===> false
+					> x.errors.full_messages
+					===> ["Name can't be blank", "Email can't be blank"] 
+
+
+				2. UNIQUENESS: Three steps.
+					/a/. In the object Model file, with a 'validates' test.
+						> validates uniqueness: { case_sensitive: false }
+
+					/b/. Adding database indices to that specific column/attribute.
+						+ Read how to implement these in '3. Writing your own database migrations' under '/2/. The Database', '/a/ Database Migrations'
+						+ An index can be added to a specific column of a given table, and then used to guarantee uniqueness on a database level, rather than just in-memory with code, to that column/attribute... With an extra caveat: databases wont necessarily enforce case-insensitivity with database indices, so we need to ensure all objects with string-type attributes are saved and stored with standardized capitalization, as noted in the next point.
+
+					/c/. Standardized Capitalization of String Attributes before saving
+						+ This is added to the model file, app/models/[modelname].rb
+						+ Use a callback function, 'before_save', to ensure string attributes are given a standardized capitalization.
+						------ SAMPLE FILE -----
+						class User < ActiveRecord::Base
+						attr_accessible :email, :name
+
+						before_save { |user| user.email.downcase! }
+
+						[... other code, including validations... ]
+						end
+						---- EOF SAMPLE FILE ----
+						Method:
+							a. before_save { |modelobject| [.. code.. ] }
+
+
+
+			g. Using the Model (Creating Instances/Objects of it)
 				0. To use the model (eg make new instances of it, eg make users or whatever), you must first run >>rake db:migrate to have Rails run the db migration file generated up there and create the User table in your database. 
 					+ learn about database migrations in section "2. a. Database Migrations".
 				1. You can fire up the Rails Console in sandbox mode so that everything you do wont effect your true database.
@@ -172,6 +236,9 @@ dont make the folder yourself-- go to parent directory, and type
 							c. .create
 								+ Parallel of .new, except it combines in .save to make one handy method.
 								+ Returns the data object created, NOT a boolean.
+								+ If the object is invalid, it will be returned, but not actually stored in the database.. As a hint, youll see that the id is nil.
+							d. .create!
+								+ Raises an exception if it fails instead of returning the invalid object.
 
 						2. FINDING AND RETRIEVING: Methods! These work by calling [Modelname].[method]
 							a. .all
@@ -237,9 +304,28 @@ dont make the folder yourself-- go to parent directory, and type
 					+ updated_at + datetime   +
 					+------------+------------+
 
-				 2. RAKE DB:MIGRATE and RAKE DB:ROLLBACK
+				2. RAKE DB:MIGRATE and RAKE DB:ROLLBACK
 					>>rake db:migrate updates your database according to your most recent migration file.
 					>>rake db:rollback will revert your database to the state before the most recent migration.
+
+				3. Writing your own database migrations
+					Cont. From 'Adding new attribute/structure to a model'
+					+ To generate a database migration:
+						>> rails generate migration [name of migration, ex: add_index_to_users_email]
+					+ If the migration is not pre-defined, you will need to fill in the migration code yourself in db/migrate/[timestamp]_migrationnameyouchose.rb
+					 /* Be sure to run the migration after creating it! 
+					 	You can look in schema.rb to see the effect of your migration. */
+					---------- SAMPLE FILE --------
+					class AddIndexToUsersEmail < ActiveRecord::Migration
+					  def change
+					    add_index :users, :email, unique: true
+					  end
+					end
+					------------------- EOF ----------------------
+					Methods:
+					a. add_index [:table], [:column], [args, for ex: unique: true]
+						+ This adds an index to the specified column of the table given, which can be used to enforce uniqueness on the database level to that column with the unique:true argument. CAVEAT: Case-sensitive. More code required to ensure attribute uniqueness. See section '2. UNIQUENESS: Three steps.'
+						+ Has the added benefit that it will make the 'find' method for that attribute, 'find_by_[attribute]', much more efficient.
 
 			/b/ The Database Itself 
 				+ lives in db/
@@ -431,7 +517,7 @@ dont make the folder yourself-- go to parent directory, and type
 
 			
 
-INFORMATION ON RUBY IN GENERAL:
+INFORMATION ON RUBY IN GENERAL (WITH REFERENCE TO SOME RAILS METHODS):
 
 	0. Using the console
 		a. Invoke the 'interactive ruby' console with 'irb'
@@ -596,6 +682,12 @@ INFORMATION ON RUBY IN GENERAL:
 		c. Some methods:
 			- .each do |key, val| [...] end
 				+ ex. >puts "key #{key.inspect} had value #{val.inspect}"
+			- [hash1].merge([hash2])
+				+ merges hash2s key/val pairs into hash1, overwriting them.
+				+ ex. 
+					>> attr = { name: "Foo", email: "Bar" }
+					>> attr.merge(name: "")
+					==> { name: "", email: "Bar" }
 	12. Ruby Classes
 		a. while most built-in classes have implicit constructors with special syntax, the
 			general syntax for creating new instances of a class is such:
@@ -681,7 +773,13 @@ INFORMATION ON RUBY IN GENERAL:
 					+ Note: One key in the hash, with that keys value being another hash. 
 				>> nick = User.new(params[:user])
 					+... Creates the same user we did manually earlier.
-
+	13. Some useful methods (esp. for Rails Models)
+		a. .respond_to?
+			+ Accepts a symbol and returns true if the object responds to the given method or attribute, and false otherwise.
+		b. .valid?
+			+ Returns true if a model instance passes validation (and as such could be saved to the db).
+		c. .dup
+			+ creates a duplicate of a model object-- especially useful for uniqueness testing in spec tests.
 
 GENERAL INFO ON HOW RAILS WORKS:
 	The /resourcename URI (by default with scaffolding) routes to the INDEX ACTION of the resourcename CONTROLLER.
@@ -721,7 +819,8 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 
 	ACTUALLY WRITING RSPEC TESTS:
 	1. You can create the 'SPEC' file (the test to be run) for any given controller in /spec/controllers/ as 'controllername_controller_spec.rb'
-			However, rspec tests in your controllers folder wont render the views for any pages by default. To fix this, you supposedly add:
+		
+		However, rspec tests in your controllers folder wont render the views for any pages by default. To fix this, you supposedly add:
 			> render_views
 		...under the 'describe XController do' heading. (Did not work for me)
 
@@ -729,7 +828,7 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 			FILE ------
 				require 'spec_helper'
 
-				describe StaticPagesController do
+				describe [FoobarController] do
 						describe "arbitrary string re: what the subject of this/these test/s is" do
 						it "arbitrary str what this specific test does" do
 						//THE FOLLOWING ARE EXAMPLES OF SOME THINGS THAT COULD BE IN A TEST
@@ -767,7 +866,38 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 			> [page.should] have_selector("htmltagname", 
 											:text => "desiredcontentstring") 
 			//Weirdness-- only seems to do partial selection, not exact match. Sigh. Works like [attr*=val].
+	
+	
+	3. Rspec tests for Models.
+		/* Note that in order for your Rspec tests to see your model, you need to run
+			>>rake db:test:prepare
+			...Because otherwise, while your development database might be up and about... Your TEST database isn't! And it needs to be prepared after any changes to your database schema/migrations.
+			*/
+		Using some of the Rspec syntax learned in the next section (4. Useful methods ...):
+		-- SAMPLE FILE ------
+			require 'spec_helper'
+
+			describe User do
+				before { @user = User.new(name: "Example User", email: "user@example.org") }
+
+				subject { @user }
+
+				it { should respond_to(:name) }
+				it { should respond_to(:email) }
+
+				it { should be_valid }
+
+				describe "when name is left blank" do 
+					before { @user.name = " " }
+					it { should_not be_valid }
+				end
+			end
+		-- EOF -----
+
+
+
 	3. Useful methods for your Rspec tests.
+
 		/a/. Reducing Repetition with the BEFORE method.
 			> before(:each) do
 				>[...]
@@ -805,6 +935,7 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 			> visit root_path
 			> click_link "About"
 			> page.should have_selector 'title', text: full_title('About Us')
+	
 	4. Make helpers for Rspec tests OR include the ones you made.
 		/ /. Files in spec/support/ are automatically included by rspec.
 
