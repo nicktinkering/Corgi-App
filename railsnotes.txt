@@ -157,7 +157,7 @@ dont make the folder yourself-- go to parent directory, and type
 					attr_accessible :email, :name
 
 					validates :name, presence: true,
-				  					 length: { maximum: 50 }
+									 length: { maximum: 50 }
 					VALID_EMAIL_REGEX = /\A[\w+\-.]+@[a-z\d\-.]+\.[a-z]+\z/i
 					validates :email, presence: true,
 									  format: { with: VALID_EMAIL_REGEX },
@@ -314,11 +314,11 @@ dont make the folder yourself-- go to parent directory, and type
 						>> rails generate migration [name of migration, ex: add_index_to_users_email]
 					+ If the migration is not pre-defined, you will need to fill in the migration code yourself in db/migrate/[timestamp]_migrationnameyouchose.rb
 					 /* Be sure to run the migration after creating it! 
-					 	You can look in schema.rb to see the effect of your migration. */
+						You can look in schema.rb to see the effect of your migration. */
 					---------- SAMPLE FILE --------
 					class AddIndexToUsersEmail < ActiveRecord::Migration
 					  def change
-					    add_index :users, :email, unique: true
+						add_index :users, :email, unique: true
 					  end
 					end
 					------------------- EOF ----------------------
@@ -348,35 +348,44 @@ dont make the folder yourself-- go to parent directory, and type
 
 
 
-	8. Creating static pages while still using the full Rails stack.
-		- We want one 'controller' for our static pages, with an 'action' corresponding to each page.
-			>>rails generate controller StaticPages home help --no-test-framework
+	8. VIEWS
+		In general: 
+			+ You can create views files arbitrarily in views/[controller]/ as [name].html.erb files, no console commands neccessary. Just be sure to have actions and routes as appropriate.
+		
+		a. Adding static pages:
+			/0/. If you dont have a controller for static pages, you may wish to add one, defining 'actions' corresponding to each page.
+				>>rails generate controller StaticPages home help --no-test-framework
 
-		- To add an 'about' page from here, still handled by the Pages controller:
-		1. Add the route in routes.rb
-			> get "pages/about"
-			/* You must restart the server [...] */
-		2. Add the action in the Pages controller
-			> def about
-			> end
-		3. Add the view
-			+ create file about.html.erb in the views/pages(controller)/ folder
-
-	9. Creating things in Rails manually
-		1. Controllers
-			a. Making a Controller (without scaffolding! and without default tests):
-				>>rails generate controller [pluralcapitalnameofcontroller] [(optionalactionnames)*] --no-test-framework
-			
-			b. Adding an action to an existing controller
-				/1/. Add the action in the appropriate controller at /controllers/controllername.rb
-					> def nameofaction
-						> /*(any code you may wish to add)*/
+			/2/. Otherwise, the usual way to establish a static page:
+				1. Add the route in routes.rb
+					> get "pages/about"
+					// You must restart the server [...]
+				2. Add the action in to the appropriate controller
+					> def about
 					> end
-				/2/. If you want a corresponding view for that action:
-					1. Add the route in routes.rb, eg:
-						> get "controller/action"
-						/* You must restart the server any time you modify the routes files for the change to take effect in your application. */
-					2. Add the view in the views/nameofcontroller/ folder, nameofaction.html.erb 
+				3. Add the view
+					+ create file about.html.erb in the views/[controller, ex pages]/ folder */
+
+		b. Adding pages related to your Models:
+			See '/4/. the resources method' in the Routes section for information on the routing/URIs of RESTful resources for models.
+
+
+	9. Controllers
+		a. Making a Controller (without scaffolding! and without default tests):
+			>>rails generate controller [pluralcapitalnameofcontroller] [(optionalactionnames)*] --no-test-framework
+		
+		b. Adding an action to an existing controller
+			/1/. Add the action in the appropriate controller at /controllers/controllername.rb
+				> def nameofaction
+					> /*(any code you may wish to add)*/
+				> end
+			/2/. If you want a corresponding view for that action:
+				1. Add the route in routes.rb, eg:
+					> get "controller/action"
+					or
+					> match '/foobar', to "controller#action"
+					/* You must restart the server any time you modify the routes files for the change to take effect in your application. */
+				2. Add the view in the views/nameofcontroller/ folder, nameofaction.html.erb 
 
 	10. Layouts, and Introducing Dynamic Content into your Views
 		/THE ASSET PIPELINE/
@@ -398,7 +407,8 @@ dont make the folder yourself-- go to parent directory, and type
 							   */
 							+ The lines are fairly self-explanatory; the only potentially "surprising" thing is that they are inside a CSS comment block... And despite the usual behavior/nature of comments in code, these are not 'ignored by the compiler' and are, as such, not optional.
 		/Layouts/
-			Main Application Layout File (application.html.erb) in Modern Rails:
+			a. Main Application Layout File (application.html.erb) in Modern Rails:
+			The header section should have at least:
 				<head>
 					<title><%= [...] %></title>
 					<%= stylesheet_link_tag    "application", media: "all" %>
@@ -408,10 +418,10 @@ dont make the folder yourself-- go to parent directory, and type
 					<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
 					<![endif]-->
 				</head>
-			> <%= yield %> (in the body) is where the normal page content goes.
+			> <%= yield %> is where a page will inject its contents into the layout.
 
 		/Using Variables in Your Views:
-			/Option 1 //Best for dynamic content
+			/Option 1 -- Use a variable supplied by the Controller
 				a. Define any variable you want in your controller.
 				It will available to the corresponding actions view.
 				+For example, to make titles dynamic. 
@@ -422,16 +432,16 @@ dont make the folder yourself-- go to parent directory, and type
 				b. Would allow one to use @title in the view itself, a la:
 					> <title> <%= @title %> </title> 
 					And each variable defined in each action would be specific to that view.//
-			Option 2 //Primarily useful for variables for the overall layout
+			Option 2 -- Provide a variable to other views
 				a. Provide a variable in the view itself, rather than the controller, by adding this to it:
 					> <% provide(:varname, 'value') %>
 					and then using 
 					> <%= yield(:title) %>
 					to access and use it (generally in the application layout)!
-			Option 3 //Using a helper method
+			Option 3 -- Use a helper method
 				One could augment the above technique by adding a helper method.
 					> <%= full_title(yield(:title)) %>
-				This would use the helper method noted below for a more tidy default title.
+				This would use the helper method noted in '11. Adding Helper Methods' for a more tidy default title.
 
 		10 a. Embedded Ruby
 			+ Obviously:
@@ -446,11 +456,22 @@ dont make the folder yourself-- go to parent directory, and type
 					+ can use image_tag("img.png", alt: "txt") in place of "text2display"
 					+ One can use a named route in place of a literal string URI for the second argument, for example:
 						> <%= link_to "Home", root_path %>
+				/3/. image_tag "img.png", alt: "txt"
+				/4/. debug(params)
+					+ Literally put 'params' in there. Those are the params of the page URI you are on.
+					+ Outputs debug information.
+			b. Useful Conditionals for Embedded Ruby
+				/a/. if Rails.env.development?
 
-		10 b. Partials
+		10 b1. Partials
 			+ A good way to make your code tidier and follow the DRY principle. To add a partial to your current view, use the following method:
 				> <%= render "layouts/filename" %>
 			+ The above causes Rails to look for a file in app/views/layouts/ called _filename.html.erb and insert its HTML content into the current view.
+
+			b2. Partials for Model Objects
+			+ If you have an instance of a model to render into a partial, you can use a shorthand syntax:
+				> <%= render @user %>
+			+ Assuming that the @user instance variable contains an instance of the User model, this will use _user.html.erb to render it and will pass the local variable 'user' into the partial which will refer to the @user instance variable in the parent view.
 
 		10 c. Aside: CSS, and Twitter Bootstrap
 			Using Twitter Bootstrap:
@@ -502,18 +523,33 @@ dont make the folder yourself-- go to parent directory, and type
 		+ Routes are in config/routes.rb
 		+ You can use named routes to refer to certain URIs, like variables. For example:
 			> <%= link_to "go to foobar", foobar_path %>
-		a. Define routes with 
-			/1/. the get method, to make simple static URIs accessible via GET requests:
-				> get 'static_pages/help'
-			/2/. the match method, to make things both accessible via GET requests AND to automatically generate a named route:
-				> match '/help', to: 'static_pages#help'
-				- This creates a named route called 'help_path' for your use.
-				- The second argument works by routing the request to the 'help' action of the 'static_pages' controller.
-				- As you can see, given that youre creating a custom mapping in the first argument, this method also means a person can visit '/help' instead of 'static_pages/help', even though the true folder structure of your website is different.
-				- It also creates a named route called 'help_url'; the difference is that this will insert the full 'http://domain[..etc..]/help' URI text when it is used, whereas 'help_path' will use a relative URI.
-					+ 'x_path' is more reliable and it is convention to use it, EXCEPT when doing redirects-- these should use 'x_url', simply because the HTTP standard technically requires a full URI for redirects (though in practice browsers will work with either).
-			/3/. The root path can get special treatment. Define it like this:
-				> root to: 'yourcontroller#action'
+		DEFINE ROUTES WITH:
+		/1/. the get method, to make simple static URIs accessible via GET requests:
+			> get 'static_pages/help'
+		/2/. the match method, to make things both accessible via GET requests AND to automatically generate a named route:
+			> match '/help', to: 'static_pages#help'
+			- This creates a named route called 'help_path' for your use.
+			- The second argument works by routing the request to the 'help' action of the 'static_pages' controller.
+			- As you can see, given that youre creating a custom mapping in the first argument, this method also means a person can visit '/help' instead of 'static_pages/help', even though the true folder structure of your website is different.
+			- It also creates a named route called 'help_url'; the difference is that this will insert the full 'http://domain[..etc..]/help' URI text when it is used, whereas 'help_path' will use a relative URI.
+				+ 'x_path' is more reliable and it is convention to use it, EXCEPT when doing redirects-- these should use 'x_url', simply because the HTTP standard technically requires a full URI for redirects (though in practice browsers will work with either).
+		/3/. The root path can get special treatment. Define it like this:
+			> root to: 'yourcontroller#action'
+		/4/. the resources method, to generate the RESTful URIs for a certain model.
+			> resources :foos
+		   ===Creates===>
+		   + named path  + HTTP + URI 					+ controller#action
+		   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+					foos  GET  	 /foos(.:format)          foos#index
+						  POST   /foos(.:format)          foos#create
+				 new_foo  GET    /foos/new(.:format)      foos#new
+				edit_foo  GET    /foos/:id/edit(.:format) foos#edit
+					 foo  GET    /foos/:id(.:format)      foos#show
+						  PUT    /foos/:id(.:format)      foos#update
+						  DELETE /foos/:id(.:format)      foos#destroy
+		   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+		   + To use a named path, you must add '_path' (or '_url') to the name listed on the left.
+		   + Note that this does not automatically create the views or actions... you must go do that yourself.
 
 			
 

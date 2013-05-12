@@ -1,0 +1,9 @@
+<!-- Teaser of a user. -->
+<div class="well">
+	<strong>
+		<%= link_to user.name, user_path(user) %>
+	</strong>
+	<div class="pull-right">
+		<%= link_to user.email, "mailto:#{user.email}" %>
+	</div>
+</div>
