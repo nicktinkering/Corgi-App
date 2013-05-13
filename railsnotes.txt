@@ -568,7 +568,12 @@ dont make the folder yourself-- go to parent directory, and type
 							DELETE /foos/:id(.:format)    	foos#destroy
 		   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 		   + To use a named path, you must add '_path' (or '_url') to the name listed on the left.
+		   + The named paths specific to one 'foo' take a 'foo' object or its id as a param.
 		   + Note that this does not automatically create the views or actions... you must go do that yourself.
+		   + The following section expounds on what 'REST'ful resources are.
+		RESTFUL RESOURCES
+		/1/. 'REST' architecture (favored in Rails applications) means representing data as resources that can be 'created', 'shown', 'updated', or 'destroyed'—four actions corresponding to the four fundamental operations 'POST', 'GET', 'PUT', and 'DELETE' defined by the HTTP standard.
+			%%unfinished%%
 
 	13. Authentication in Rails: Signing in, signing out, passwords...
 		+ You should have a User model or equivalent for people to have accounts.
