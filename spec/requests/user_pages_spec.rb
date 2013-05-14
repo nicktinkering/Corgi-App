@@ -12,14 +12,4 @@ describe "User Pages" do
 		 it { should have_selector('title', text: full_title('Sign up')) }
 	end
 
-	describe "profile page" do
-
-		# code to create a user...
-
-		before { visit user_path(user) }
-
-		it { should have_selector('h1', text: user.name ) }
-		it { should have_selector('title', text: user.name ) }
-	end	
-
 end

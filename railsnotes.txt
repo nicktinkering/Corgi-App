@@ -366,7 +366,7 @@ dont make the folder yourself-- go to parent directory, and type
 
 
 
-	8. VIEWS
+	8. VIEWS //Merge this section with 10. VIEWS
 		In general: 
 			+ You can create views files arbitrarily in views/[controller]/ as [name].html.erb files, no console commands neccessary. Just be sure to have actions and routes as appropriate.
 		
@@ -385,7 +385,8 @@ dont make the folder yourself-- go to parent directory, and type
 					+ create file about.html.erb in the views/[controller, ex pages]/ folder */
 
 		b. Adding pages related to your Models:
-			See '/4/. the resources method' in the Routes section for information on the routing/URIs of RESTful resources for models.
+			+ See '/4/. the resources method' in the Routes section for information on the routing/URIs of RESTful resources for models.
+			+ See 'D. ERB Forms' for information on creating instances of models through ERB forms. 
 
 
 	9. Controllers
@@ -405,7 +406,7 @@ dont make the folder yourself-- go to parent directory, and type
 					/* You must restart the server any time you modify the routes files for the change to take effect in your application. */
 				2. Add the view in the views/nameofcontroller/ folder, nameofaction.html.erb 
 
-	10. Layouts, and Introducing Dynamic Content into your Views
+	10. VIEWS
 		/THE ASSET PIPELINE/
 			a. (Starting in Rails 3.1) There are three directories for static assets, each with its own purpose:
 					> app/assets: assets specific to the present application
@@ -461,7 +462,7 @@ dont make the folder yourself-- go to parent directory, and type
 					> <%= full_title(yield(:title)) %>
 				This would use the helper method noted in '11. Adding Helper Methods' for a more tidy default title.
 
-		10 a. Embedded Ruby
+		A. Embedded Ruby: General
 			+ Obviously:
 				> <% [...] %> runs Ruby code, but does not insert whats returned
 				> <%= [...] %> runs Ruby code and inserts the return value as a string
@@ -481,7 +482,7 @@ dont make the folder yourself-- go to parent directory, and type
 			b. Useful Conditionals for Embedded Ruby
 				/a/. if Rails.env.development?
 
-		10 b1. Partials
+		B. Partials
 			+ A good way to make your code tidier and follow the DRY principle. To add a partial to your current view, use the following method:
 				> <%= render "layouts/filename" %>
 			+ The above causes Rails to look for a file in app/views/layouts/ called _filename.html.erb and insert its HTML content into the current view.
@@ -492,7 +493,7 @@ dont make the folder yourself-- go to parent directory, and type
 				> <%= render @user %>
 			+ Assuming that the @user instance variable contains an instance of the User model, this will use _user.html.erb to render it and will pass the local variable 'user' into the partial which will refer to the @user instance variable in the parent view.
 
-		10 c. Aside: CSS, and Twitter Bootstrap
+		C. Aside: CSS, and Twitter Bootstrap
 			Using Twitter Bootstrap:
 			/0/. Documentation
 				- http://twitter.github.io/bootstrap/getting-started.html
@@ -511,6 +512,8 @@ dont make the folder yourself-- go to parent directory, and type
 				+ create a file to contain it in app/assets/stylesheets
 					-ex. custom.css.scss 
 				+ Anything in this directory will be automatically included as part of the application.css file. This is because of the Rails ASSET PIPELINE.
+
+		D. ERB Forms
 
 	11. Adding Helper Methods
 		+ Helper methods reside in app/helpers/[x]_helper.rb.
@@ -557,7 +560,7 @@ dont make the folder yourself-- go to parent directory, and type
 		/4/. the resources method, to generate the RESTful URIs for a certain model.
 			> resources :foos
 		   ===Creates===>
-		   + named path  + HTTP + URI 					+ controller#action
+		   + named path   + HTTP + URI 					+ controller#action
 		   +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 					foos	GET  	 /foos(.:format)        	foos#index
 							POST   /foos(.:format)        	foos#create
@@ -588,7 +591,7 @@ dont make the folder yourself-- go to parent directory, and type
 					/* "Digest" comes from the terminology of cryptographic hash functions.  */
 				+ This value will be an encrypted version of the password string of the users choice. When the user inputs their password, that string will be encrypted and checked against the password_digest field, with matching encypted values indicating the password was correct.
 				1. THE ACTUAL ENCRYPTION -- BCRYPT
-					+ The quality of ones encryption algorithm is key to its true security. We will use a state-of-the-art hash function called 'bcrypt'.
+					+ The quality of ones encryption algorithm is key to its true security. We will use a state-of-the-art hash function called 'bcrypt'-- specifically, this is used by 'has_secure_password'
 					+ This requires adding the gem 'bcrypt-ruby' to our Gemfile.
 						> gem 'bcrypt-ruby', '3.0.1'
 						/* >> bundle update && bundle install .... 
@@ -611,7 +614,7 @@ dont make the folder yourself-- go to parent directory, and type
 				3. Implementation:
 					- Add 'password' and 'password_confirmation' to attr_accessible so they can be made in an initialization hash from the sign-up form.
 					- Add a 'validates' call for the password attribute as desired-- presence and length.
-					- Add a 'validates' call for the password_confirmation attribute presence; further validations are made unneccessary by the next step.
+					- Add a 'validates' call for the password_confirmation attribute presence; further validations are made unneccessary by the next step, but this prevents the nil case.
 					- Add 'has_secure_password' to your User model, as a function call of its own. This will: 
 						+ add the 'password' and 'password_confirmation' attributes to the User model 
 						+ require that they match 
@@ -634,21 +637,26 @@ dont make the folder yourself-- go to parent directory, and type
 				end
 			----------------------- END SAMPLE USER.RB FILE --------------------
 
-		/2/. User Authentication
-			+ We simply need to be able to retrieve users based on their unique identifier of choice (email, username, whatever you implemented), and then authenticate them based on password entered.
-			+ The first of those is easy: simply use, eg, 'find_by_email(email_entered)'
-				/* You should have added an index to this attribute, making the find method much more efficient. */
-			+ The second is a method that comes with 'has_secure_password', for your User model:
-				> user.authenticate(password)
-					- This will:
-					- ...compare the password given with the encrypted password_digest
-					- ...return the correct user with that unique identifier (email,etc) from the database if the password matches, or false otherwise.
-					- The use would then be: > current_user = user.authenticate(password)
-				// Don't forget a respond_to rspec check for your proposed method, along with tests for it doing the right thing.
-				// %%unfinished%% //More coming in Chapter 8...
+		/2/. Signing In
+			a. User Authentication
+				+ We simply need to be able to retrieve users based on their unique identifier of choice (email, username, whatever you implemented), and then authenticate them based on password entered.
+				+ The first of those is easy: simply use, eg, 'find_by_email(email_entered)'
+					/* You should have added an index to this attribute, making the find method much more efficient. */
+				+ The second is a method that comes with 'has_secure_password', for your User model:
+					> user.authenticate(password)
+						- This will:
+						- ...compare the password given with the encrypted password_digest
+						- ...return the correct user with that unique identifier (email,etc) from the database if the password matches, or false otherwise.
+						- The use would then be: > current_user = user.authenticate(password)
+					// Don't forget a respond_to rspec check for your proposed method, along with tests for it doing the right thing.
+
+
+		// %%unfinished%% //More coming in Chapter 8...
 
 
 INFORMATION ON RUBY IN GENERAL (WITH REFERENCE TO SOME RAILS METHODS):
+Tip: Use the rails API as a reference for any given method at api.rubyonrails.org.
+Another good source is Rails Guides at guides.rubyonrails.org.
 
 	0. Using the console
 		a. Invoke the 'interactive ruby' console with 'irb'
@@ -911,8 +919,10 @@ INFORMATION ON RUBY IN GENERAL (WITH REFERENCE TO SOME RAILS METHODS):
 			+ Returns true if a model instance passes validation (and as such could be saved to the db).
 		c. .dup
 			+ creates a duplicate of a model object-- especially useful for uniqueness testing in spec tests.
+		d. [Modelname].count
+			+ number of objects of a certain model stored in the database.
 
-GENERAL INFO ON HOW RAILS WORKS:
+VERY GENERAL OVERVIEW ON HOW RAILS WORKS:
 	The /resourcename URI (by default with scaffolding) routes to the INDEX ACTION of the resourcename CONTROLLER.
 	The user Controller talks to the Model (user.rb) by getting User.all, and passes that to the view with @users.
 	In routes.rb,
@@ -929,9 +939,6 @@ GENERAL INFO ON HOW RAILS WORKS:
 				- You can look at the User model in user.rb... Notice its empty! the .all method is inherited in the first line, that does ActiveRecord::Base.
 			+ The return array of User.all is captured in @users, an instance variable.. The significance of which is that instance variables are available to the views!
 	many Actions have a corresponding view (action).html.erb.
-
-
-
 
 USING RSPEC, AND WRITING RSPEC TESTS:
 	/* Remember: in order to get going from here, you have to added and installed the rspec and cabybera gems in your Gemfile, and have run
@@ -1087,7 +1094,6 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 			---- EOF -----
 		/b/. ...Or you can just use 'include' to bring in the module.
 			> include ApplicationHelperOrwhateveryoucalledit
-
 
 USING GIT:
 	VERSION-CONTROL CONFIGURATION.

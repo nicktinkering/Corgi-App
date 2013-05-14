@@ -10,6 +10,14 @@ $grayMediumLight: #eaeaea;
   box-sizing: border-box;
 }
 
+.user-icon{
+  display: inline-block;
+  margin-bottom: 30px;
+  border: 5px solid #7e7e7e;
+  padding: 10px;
+  background-color: #555;
+}
+
 /*Note: virtually all of below is taken from Rails Tutorial by Michael Hartl*/
 
 html{
