@@ -179,7 +179,7 @@ dont make the folder yourself-- go to parent directory, and type
 					end
 					---- EOF SAMPLE FILE ----
 
-				1. When validations fail, and 'errors' object is generated. You can get the reason for failure by calling .errors.full_messages on the model object that failed validation.
+				1. When validations (or saving) fail, and 'errors' object is generated. You can get the reason for failure by calling .errors.full_messages on the model object that failed validation.
 					> x = User.new
 					> x.valid?
 					===> false
@@ -479,6 +479,19 @@ dont make the folder yourself-- go to parent directory, and type
 				/4/. debug(params)
 					+ Literally put 'params' in there. Those are the params of the page URI you are on.
 					+ Outputs debug information.
+				/5/. Method 'form_for(@modelobj)'
+					Syntax: 
+						> form_for(@obj) do |f| [..] end
+					Helpers:
+						> f.label :attribute, "Optional alternate display text"
+						> f.text_field :attr
+						> f.password_field :attr
+						> f.submit
+						> all of the above can also take an extra arg to add CSS classes: [..], class: "[..]"
+				/6/. pluralize(#, "word")
+						> pluralize(object.errors.count, "error")
+				/7/. content_tag(:HTMLTAGNAME, "text"[, class: "[..]", etc])
+					+ Example: content_tag(:div, value, class:"alert alert-#{key}")
 			b. Useful Conditionals for Embedded Ruby
 				/a/. if Rails.env.development?
 
@@ -513,7 +526,43 @@ dont make the folder yourself-- go to parent directory, and type
 					-ex. custom.css.scss 
 				+ Anything in this directory will be automatically included as part of the application.css file. This is because of the Rails ASSET PIPELINE.
 
-		D. ERB Forms
+		D. ERB Forms -- creating an object with a view
+			/0/. To create an object with a form on your site, presumably you would want to do so via the new action (and, as such, the new.html.erb view) of your objects controller. So, first, go to your controller and create a new instance of the object you intend to create in an instance variable for your page to flesh out.
+				> def new 
+					> @user = User.new 
+				> end 
+
+			/1/. Create the form in the corresponding view with ERB helper 'form_for(@obj)', which you can read about in "/5/. Method 'form_for(@modelobj)'" under the Embedded Ruby section. 
+
+			/2/. Youll also need to then flesh out the 'create' action of your controller to handle when the form is submitted. 
+					+ You should try to create a user with the params supplied, and account for either a successful save or an unsuccessful one. 
+					+ The params will reside in the params hash at a key named [:modelname]
+						- The structure of the params, for example, with a User object: { user: { name: "Foo", email: "foo@gs.bg", [...] } }
+					+ One can use "render 'viewname'" to render a given view; note that this will not pass through that views normal controller, and it will only have the variable you defined within that action. However, we can use this with a conditional to route a successful or unsuccessful save appropriately.
+					+ Example 'create' action:
+						> def create
+						>	@user = User.new(params[:user])
+						>	if @user.save 
+						>		redirect_to @user //# Could also just render the show view, with the @user variable as defined above.
+						>	else 
+						>		render 'new' //# Show the signup form again. The @user variable will be the one above, so form fields will be pre-filled with what was entered before (the 'new' view will use this @user variable in constructing the form. )
+						>	end
+						> end
+			/3/. Showing error messages
+				+ When an object has .save called on it and fails, it automatically gets an errors object attached to it. As such, you can go into your view (or, better, a partial) and iterate over these (an array of messages, with @obj.errors.full_messages), inserting them as desired. (Be sure to check that there are .any? first.)
+				+ Additionally, Rails automatically wraps fields corresponding to errors with the CSS class 'field_with_errors', which you can use as you wish.
+			/4/. Using a 'flash' on success
+					+ On success, you may route a user to their profile. You may wish to use a flash to display a welcome message on account of their successful registration: the 'flash' variable is reserved for messages that you wish to appear when a user first loads a page, and not on refresh or navigation away.
+					+ You can define key-value pairs for the 'flash' hash in your controller.
+					+ It is convention (and handy) to insert the ERB into the application layout file, so that you will already have that in place to display any flashes you produce later on.
+					Example: 
+					(in controller#action)
+					> flash[:success] = "Welcome!"
+					(in application.html.erb)
+					> <% flash.each do |key, value| %>
+					> 	 <%= content_tag(:div, value, class:"alert alert-#{key}") %>
+					> <% end %>
+
 
 	11. Adding Helper Methods
 		+ Helper methods reside in app/helpers/[x]_helper.rb.
@@ -576,7 +625,6 @@ dont make the folder yourself-- go to parent directory, and type
 		   + The following section expounds on what 'REST'ful resources are.
 		RESTFUL RESOURCES
 		/1/. 'REST' architecture (favored in Rails applications) means representing data as resources that can be 'created', 'shown', 'updated', or 'destroyed'—four actions corresponding to the four fundamental operations 'POST', 'GET', 'PUT', and 'DELETE' defined by the HTTP standard.
-			%%unfinished%%
 
 	13. Authentication in Rails: Signing in, signing out, passwords...
 		+ You should have a User model or equivalent for people to have accounts.
@@ -653,6 +701,9 @@ dont make the folder yourself-- go to parent directory, and type
 
 		// %%unfinished%% //More coming in Chapter 8...
 
+
+	??. Miscellaneous
+		FILE UPLOAD: "If your application does need to handle custom images or other file uploads, I recommend the Paperclip gem."
 
 INFORMATION ON RUBY IN GENERAL (WITH REFERENCE TO SOME RAILS METHODS):
 Tip: Use the rails API as a reference for any given method at api.rubyonrails.org.
@@ -760,6 +811,7 @@ Another good source is Rails Guides at guides.rubyonrails.org.
 		> 'puts' arg => (prints arg variable, returns nil)
 		> 'print' will not put a newline at the end.
 		> 'p' will 'puts' arg.inspect
+		> 'y [object]' will print an object to console in YAML format
 	6. 'nil'
 		a. nil.empty? throws an error
 		b. nil.to_s ==> ""
@@ -921,6 +973,12 @@ Another good source is Rails Guides at guides.rubyonrails.org.
 			+ creates a duplicate of a model object-- especially useful for uniqueness testing in spec tests.
 		d. [Modelname].count
 			+ number of objects of a certain model stored in the database.
+		e. Digest::MD5::hexdigest(str)
+			+ MD5 hash of string.
+		f. .errors
+			-.[..].count
+			-.[..].full_messages
+			-.[..].any?
 
 VERY GENERAL OVERVIEW ON HOW RAILS WORKS:
 	The /resourcename URI (by default with scaffolding) routes to the INDEX ACTION of the resourcename CONTROLLER.
@@ -1073,9 +1131,15 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 			> visit root_path
 			> click_link "About"
 			> page.should have_selector 'title', text: full_title('About Us')
+			and buttons with click_button
 		/e/. specify { some_var.should [== "some value" | be_false | etc... ] }
 		/f/. let(:new_var) { "value of choice" }
 			+ a convenient way to create local variables inside tests.
+		/g/. expect { [...] }.not_to change([User], [:count])
+			 expect { [...] }.to change([Model], [:attr_or_method]).by([val])
+			 + change takes a Model and a symbol for an object or method, and calculates the result of calling that symbol on the object both before and after the block preceding it.		 
+		/h/. fill_in "[Fieldname]", with: "Foobar baz"
+		/i/. click_button "Button text"
 	
 	4. Make helpers for Rspec tests OR include the ones you made.
 		/ /. Files in spec/support/ are automatically included by rspec.
@@ -1094,6 +1158,38 @@ USING RSPEC, AND WRITING RSPEC TESTS:
 			---- EOF -----
 		/b/. ...Or you can just use 'include' to bring in the module.
 			> include ApplicationHelperOrwhateveryoucalledit
+
+	5. Using Model object Factories
+		+ Factories are a convenient way to define many model objects and insert them into the database for testing.
+		+ We can use the 'Factory Girl' gem to do this. Include the gem in your Gemfile as such, under the test group:
+			> gem 'factory_girl_rails', '4.1.0'
+			/* bundle update bundle install restart rails server ... */
+		+ You can create your factories in spec/factories.rb, and it will automatically be loaded by Rspec.
+		/1/. Syntax
+			------------- SAMPLE FACTORIES.RB FILE -------------
+			FactoryGirl.define do
+				factory :user do
+					name		"Ron Swanson"
+					email		"libertarian@baconandeggs.gov"
+					password 			  "eggs1234"
+					password_confirmation "eggs1234"
+				end
+			end
+			---------------- EOF SAMPLE FILE ------------------
+			Methods:
+			+ factory [:modelname] do [...] end
+				- Tells FactoryGirl that the subsequent definition is for a Modelname object.
+		/2/. Use
+			+ You can then use this factory in your Rspec tests with the 'let' command.
+				> let(:user) { FactoryGirl.create(:user) }
+		/3/. Speed up
+			+ If you are using FactoryGirl to create objects with a secure password using Bcrypt, it can take a long time to do so-- the bcrypt algorithm is designed by default for security, not speed.
+			+ However, you can configure Bcrypt to switch priority to speed by adding the following to config/environments/test.rb:
+				> # Speed up tests by lowering BCrypts cost function.
+				> require 'bcrypt'
+				> silence_warnings do 
+					> BCrypt::Engine::DEFAULT_COST = BCrypt::Engine::MIN_COST
+				> end
 
 USING GIT:
 	VERSION-CONTROL CONFIGURATION.

@@ -12,7 +12,7 @@
 	</div>
 	<div class="row-fluid">
 		<div class="span3 pagination-centered">
-			<%= image_tag "sample_icon.png", alt: "Sample", class: "img-polaroid user-icon" %>
+			<%= image_tag "sample_icon.png", alt: "#{@user.name} as a cat drinking milk.", class: "img-polaroid user-icon" %>
 			<%= link_to raw('<i class="icon-envelope icon-white"></i> Send an email'), "mailto:#{@user.email}", class:"btn btn-primary" %>
 		</div>
 		<div class="span7 offset1">
