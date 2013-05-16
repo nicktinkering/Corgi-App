@@ -439,7 +439,7 @@ dont make the folder yourself-- go to parent directory, and type
 				</head>
 			> <%= yield %> is where a page will inject its contents into the layout.
 
-		/Using Variables in Your Views:
+		/Using Variables in Your Views and Layouts:
 			/Option 1 -- Use a variable supplied by the Controller
 				a. Define any variable you want in your controller.
 				It will available to the corresponding actions view.
@@ -456,7 +456,7 @@ dont make the folder yourself-- go to parent directory, and type
 					> <% provide(:varname, 'value') %>
 					and then using 
 					> <%= yield(:title) %>
-					to access and use it (generally in the application layout)!
+					to access and use it in another file (generally in a layout)!
 			Option 3 -- Use a helper method
 				One could augment the above technique by adding a helper method.
 					> <%= full_title(yield(:title)) %>
@@ -686,7 +686,7 @@ dont make the folder yourself-- go to parent directory, and type
 			----------------------- END SAMPLE USER.RB FILE --------------------
 
 		/2/. Signing In
-			a. User Authentication
+			a. Notes on User Authentication
 				+ We simply need to be able to retrieve users based on their unique identifier of choice (email, username, whatever you implemented), and then authenticate them based on password entered.
 				+ The first of those is easy: simply use, eg, 'find_by_email(email_entered)'
 					/* You should have added an index to this attribute, making the find method much more efficient. */
@@ -697,6 +697,9 @@ dont make the folder yourself-- go to parent directory, and type
 						- ...return the correct user with that unique identifier (email,etc) from the database if the password matches, or false otherwise.
 						- The use would then be: > current_user = user.authenticate(password)
 					// Don't forget a respond_to rspec check for your proposed method, along with tests for it doing the right thing.
+			b. How signing-in works: 'Session' models 
+				+ Signing/logging in to a site is essentially creating something-- a session-- and this should be created as a model, by REST conventions.
+				+ The difference between this and previous models is that, when created, this model object is not stored and persisted to the database-- instead, it is stored in the cookie of a browser.
 
 
 		// %%unfinished%% //More coming in Chapter 8...
