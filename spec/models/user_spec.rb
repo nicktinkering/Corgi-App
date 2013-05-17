@@ -8,6 +8,7 @@
 #  created_at      :datetime         not null
 #  updated_at      :datetime         not null
 #  password_digest :string(255)
+#  remember_token  :string(255)
 #
 
 require 'spec_helper'
@@ -24,12 +25,13 @@ describe User do
 	it { should respond_to(:password_digest) }
 	it { should respond_to(:password) }
 	it { should respond_to(:password_confirmation) }
+	it { should respond_to(:remember_token) }
 	it { should respond_to(:authenticate) }
 
 	it { should be_valid }
 
-	describe "the attributes of User: " do
-			describe "the name" do
+	describe ": attributes:" do
+			describe "the name:" do
 				describe "when it is left blank" do
 					before { @user.name = " " }
 					it { should_not be_valid }
@@ -41,7 +43,7 @@ describe User do
 				end
 			end
 
-			describe "the email" do
+			describe "the email:" do
 				describe "when it is left blank" do
 					before { @user.email = " " }
 					it { should_not be_valid }
@@ -95,9 +97,7 @@ describe User do
 				end	
 			end
 
-
-
-			describe "the password" do
+			describe "the password:" do
 				describe "when it is left blank" do
 					before { @user.password = @user.password_confirmation = " " }
 					it { should_not be_valid }
@@ -117,12 +117,16 @@ describe User do
 					before { @user.password_confirmation = nil }
 					it { should_not be_valid }
 				end
+			end
 
+			describe "the remember token:" do
+				before { @user.save }
+				its(:remember_token) { should_not be_blank }
 			end
 	end
 
-	describe "the methods of User: " do
-		describe "the authenticate method: " do
+	describe ": methods:" do
+		describe "authenticate:" do
 			describe "the return value" do
 				before { @user.save }
 				let(:db_user_with_that_email) { User.find_by_email(@user.email) }

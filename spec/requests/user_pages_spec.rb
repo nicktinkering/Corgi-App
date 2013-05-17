@@ -51,6 +51,14 @@ describe "User Pages" do
 				it { should have_selector('title', text: User.find_by_email("ex@example.com").name ) }
 			end
 
+			describe "after saving the user" do
+				before { click_button submit }
+
+				it { should have_selector('title', text: User.find_by_email("ex@example.com").name) }
+				it { should have_selector('div.alert.alert-success', text: 'Welcome') }
+				it { should have_link('Sign out') }
+			end
+
 
 		end
 	end
