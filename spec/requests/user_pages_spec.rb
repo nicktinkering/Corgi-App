@@ -63,4 +63,43 @@ describe "User Pages" do
 		end
 	end
 
+	describe "editing profile" do
+		let(:user) { FactoryGirl.create(:user) }
+		before do 
+			sign_in user
+			visit edit_user_path(user)
+		end
+		describe "page" do
+			it { should be_user_edit_page }
+		end
+
+		describe "submitting" do
+			describe "with invalid information" do
+				before { click_button "Save Changes" }
+
+				it { should have_selector('div.alert.alert-error') }
+			end
+
+			describe "with valid information" do
+				let(:new_name) { "New Name" }
+				let(:new_email) { "New@email.co" }
+				before do 
+					fill_in "Name", with: new_name
+					fill_in "Email", with: new_email
+					fill_in "Password", with: user.password
+					fill_in "Confirmation", with: user.password
+					click_button "Save Changes"
+				end
+				describe "it should change the information in the database" do
+					specify { user.reload.name.should == new_name }
+					specify { user.reload.email.should == new_email.downcase }
+				end
+				describe "resulting page" do
+					it { should have_selector('div.alert.alert-success') }
+					it { should_not have_link('Sign in') }
+				end
+			end
+		end
+	end
+
 end 
